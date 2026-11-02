@@ -7,9 +7,9 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/quic-go/quic-go v0.64.1
 	github.com/refraction-networking/utls v1.8.2
-	github.com/xtaci/kcp-go/v5 v5.6.72
+	github.com/xtaci/kcp-go/v5 v5.7.1
 	github.com/xtaci/smux v1.5.57
-	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.15.2
+	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.15.3
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/webtunnel v0.0.7
 	golang.org/x/net v0.62.0
 )
@@ -35,8 +35,8 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
-	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
-	github.com/klauspost/reedsolomon v1.14.1 // indirect
+	github.com/klauspost/cpuid/v2 v2.4.1 // indirect
+	github.com/klauspost/reedsolomon v1.14.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pion/datachannel v1.6.2 // indirect
 	github.com/pion/dtls/v3 v3.1.5 // indirect
@@ -67,5 +67,5 @@ require (
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/time v0.16.0 // indirect
 )
