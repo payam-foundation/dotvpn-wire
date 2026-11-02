@@ -31,14 +31,20 @@ Beta. The current wire version is `v0.2.0`. Expect breaking changes before `v1.0
 Each layer talks only to its neighbour. Core, relay and client assemble the same stack, so a change in one layer is a change for every component.
 
 ```mermaid
-flowchart BT
-    carriers["transport: h2connect, h3connect, cdnws, webtunnel, snowflake, reverse, dnscarrier"]
-    mimic["mimic: Chrome-like ClientHello with HMAC knock, decoy fallback"]
-    handshake["handshake: X25519 session, Ed25519 responder auth, version in KDF"]
-    frame["frame: masked, padded AEAD records, idle cover traffic"]
-    auth["auth: Ed25519 JWT with audience"]
+flowchart TB
+    users(["dotvpn-core · dotvpn-relay · dotvpn-client"])
+    auth["auth<br/>Ed25519 JWT, audience claim"]
+    frame["frame<br/>masked, padded AEAD records, cover traffic"]
+    handshake["handshake<br/>X25519, Ed25519 responder auth, version in KDF"]
+    mimic["mimic<br/>Chrome-like ClientHello, HMAC knock, decoy fallback"]
+    carriers["transport<br/>h2connect, h3connect, cdnws, webtunnel, snowflake, reverse, dnscarrier"]
 
-    carriers --> mimic --> handshake --> frame --> auth
+    users -->|"import"| auth --> frame --> handshake --> mimic --> carriers
+
+    classDef focal fill:#fdf0ea,stroke:#eb6c36,color:#2d3142
+    classDef ext fill:#f5f5f5,stroke:#7a8399,stroke-dasharray:4 3,color:#2d3142
+    class mimic focal
+    class users ext
 ```
 
 ## Use it
