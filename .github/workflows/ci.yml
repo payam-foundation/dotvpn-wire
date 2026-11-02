@@ -37,7 +37,7 @@ jobs:
           done
       - name: VERSION matches the tag
         if: startsWith(github.ref, 'refs/tags/v')
-        run: test "$(cat VERSION)" = "${GITHUB_REF_NAME}"
+        run: test "$(cat VERSION)" = "${GITHUB_REF_NAME#v}"
 
   security:
     runs-on: ubuntu-latest
@@ -65,22 +65,6 @@ jobs:
           scanners: vuln,secret,misconfig
           severity: HIGH,CRITICAL
           exit-code: "1"
-
-  # A library: the release is a signed tag and nothing else.
-  release:
-    needs: [test, security]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Runs the censorship lab (dotvpn-lab) against this PR. Needs a fine-grained
   # token with actions:write on dotvpn-lab in the LAB_DISPATCH_TOKEN secret;

@@ -89,7 +89,7 @@ go test -race -count=1 ./...
 go test -run '^$' -fuzz '^FuzzRead$' -fuzztime 30s ./frame   # also FuzzRespond, FuzzParseKnock, FuzzReadAuth, FuzzDecode
 ```
 
-After a change, run the tests of `dotvpn-core`, `dotvpn-relay`, `dotvpn-client` and `dotvpn-lab` against your checkout. They use a local `replace` for side-by-side work; CI drops it and tests the pinned tag and wire `main`.
+After a change, run the tests of `dotvpn-core`, `dotvpn-relay`, `dotvpn-client` and `dotvpn-lab` against your checkout. Use an untracked `go.work` in the parent directory (see CONTRIBUTING.md) to build them against your checkout; CI tests the pinned tag and wire `main`.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
