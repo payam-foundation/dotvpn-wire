@@ -14,7 +14,7 @@ go test -run '^$' -fuzz '^Name$' -fuzztime 30s ./pkg   # FuzzRead (frame), FuzzR
 
 ## Invariants
 
-- Semver. `VERSION` must match the release tag. The wire contract is `handshake.Version` plus the golden vectors (`TestGoldenRecord`, `TestGoldenKeys`). Change a vector deliberately and bump the version (ADR-011).
+- Semver. `VERSION` (no `v` prefix) must match the release tag; release-please bumps both. The wire contract is `handshake.Version` plus the golden vectors (`TestGoldenRecord`, `TestGoldenKeys`). Change a vector deliberately and bump the version (ADR-011).
 - Every length-prefixed reader has a size cap. Keep it when adding readers.
 - TLS pins use `VerifyConnection` (survives session resumption). No new `InsecureSkipVerify` unless pinned or loopback-only.
 - After a change run the three dependants (`dotvpn-core`, `dotvpn-relay`, `dotvpn-client`) and `dotvpn-lab`.
@@ -29,3 +29,7 @@ go test -run '^$' -fuzz '^Name$' -fuzztime 30s ./pkg   # FuzzRead (frame), FuzzR
 ## Docs
 
 `docs/adr/`: ADR-003, 004, 007, 008, 011, 017, 018. Cross-repo index: `../dotvpn-lab/docs/adr/README.md`.
+
+## Flow
+
+Pull requests only, never push to `main`. PR title is a Conventional Commit, commits are signed off (`git commit -s`), merges are squash-only. Releases come from release-please. See `CONTRIBUTING.md`.
