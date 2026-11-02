@@ -8,7 +8,7 @@ require (
 	github.com/quic-go/quic-go v0.64.1
 	github.com/refraction-networking/utls v1.8.2
 	github.com/xtaci/kcp-go/v5 v5.6.72
-	github.com/xtaci/smux v1.5.57
+	github.com/xtaci/smux v2.0.1+incompatible
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.15.2
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/webtunnel v0.0.7
 	golang.org/x/net v0.62.0
