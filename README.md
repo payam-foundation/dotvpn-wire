@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme-header-dark.svg">
+  <img alt="Dot VPN" src=".github/readme-header-light.svg">
+</picture>
+
 # dotvpn-wire
 
 [![CI](https://github.com/payam-foundation/dotvpn-wire/actions/workflows/ci.yml/badge.svg)](https://github.com/payam-foundation/dotvpn-wire/actions/workflows/ci.yml)
@@ -5,7 +10,7 @@
 [![Status: beta](https://img.shields.io/badge/status-beta-orange)](#status)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)](LICENSE)
 
-The shared wire protocol of [dotvpn](#related-repositories): framing, authentication, handshake, carriers and discovery. Core, relay and client import this one library, so they cannot disagree about what goes on the wire.
+The shared wire protocol of [Dot VPN](#related-repositories): framing, authentication, handshake, carriers and discovery. Core, relay and client import this one library, so they cannot disagree about what goes on the wire.
 
 It is a Go library only. There are no binaries.
 
