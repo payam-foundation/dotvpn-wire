@@ -6,6 +6,10 @@ updates:
     commit-message: {prefix: build, include: scope}
     groups:
       all: {patterns: ["*"], update-types: [minor, patch]}
+    ignore:
+      # snowflake still needs the smux 1.x API (Config.Version, Stream.WriteTo).
+      - dependency-name: github.com/xtaci/smux
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule: {interval: weekly}
