@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	github.com/coder/websocket v1.8.15
 	github.com/miekg/dns v1.1.73
-	github.com/quic-go/quic-go v0.64.1
+	github.com/quic-go/quic-go v0.65.0
 	github.com/refraction-networking/utls v1.8.2
 	github.com/xtaci/kcp-go/v5 v5.7.2
 	github.com/xtaci/smux v1.5.58
