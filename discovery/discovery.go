@@ -124,6 +124,9 @@ type Client struct {
 	Channels   []ControlChannel
 	Verifier   *auth.Verifier
 	AccountKey string
+	// Relays are private community (or private curated) relay ids the client
+	// has opted into; control includes them in the signed list when minting.
+	Relays []string
 	// CachePath persists the last good Signed list so the next start works
 	// with every channel blocked. Empty disables caching.
 	CachePath string
@@ -183,7 +186,11 @@ func (c *Client) viaChannel(ctx context.Context, ch ControlChannel) (Result, err
 		base = strings.TrimSuffix(ch.Via, "/")
 		host = ch.Host
 	}
-	body, _ := json.Marshal(map[string]string{"account_key": c.AccountKey})
+	payload := map[string]any{"account_key": c.AccountKey}
+	if len(c.Relays) > 0 {
+		payload["relays"] = c.Relays
+	}
+	body, _ := json.Marshal(payload)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/v1/token", bytes.NewReader(body))
 	if err != nil {
 		return Result{}, err
