@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/payam-foundation/dotvpn-wire/compare/v0.3.0...v0.3.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **auth,invite:** accept hard-wrapped secret pastes ([#16](https://github.com/payam-foundation/dotvpn-wire/issues/16)) ([3cfeb3e](https://github.com/payam-foundation/dotvpn-wire/commit/3cfeb3e96fbe2009a6106bed5729da78c9aade0c))
+
 ## [0.3.0](https://github.com/payam-foundation/dotvpn-wire/compare/v0.2.1...v0.3.0) (2026-11-09)
 
 
