@@ -14,4 +14,20 @@ func TestRoundTrip(t *testing.T) {
 	if _, err := DecodeInvite("https://x"); err == nil {
 		t.Fatal("wrong prefix accepted")
 	}
+	enc := in.Encode()
+	var wrapped string
+	for i := 0; i < len(enc); i += 16 {
+		if i > 0 {
+			wrapped += "\n"
+		}
+		end := i + 16
+		if end > len(enc) {
+			end = len(enc)
+		}
+		wrapped += enc[i:end]
+	}
+	out, err = DecodeInvite(wrapped)
+	if err != nil || out.Account != "ak_1" {
+		t.Fatalf("hard-wrapped invite: %v %+v", err, out)
+	}
 }

@@ -35,10 +35,11 @@ func (i Invite) Encode() string {
 	return invitePrefix + base64.RawURLEncoding.EncodeToString(b)
 }
 
-// DecodeInvite parses Encode output; surrounding whitespace is ignored.
+// DecodeInvite parses Encode output. Surrounding and internal whitespace
+// (hard-wrapped TUI paste) is ignored.
 func DecodeInvite(s string) (Invite, error) {
 	var i Invite
-	s = strings.TrimSpace(s)
+	s = stripSpace(s)
 	if !strings.HasPrefix(s, invitePrefix) {
 		return i, errors.New("invite: missing dotvpn:// prefix")
 	}
@@ -53,4 +54,13 @@ func DecodeInvite(s string) (Invite, error) {
 		return i, errors.New("invite: no trusted key")
 	}
 	return i, nil
+}
+
+func stripSpace(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+			return -1
+		}
+		return r
+	}, s)
 }

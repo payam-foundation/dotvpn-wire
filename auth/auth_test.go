@@ -67,6 +67,22 @@ func TestBearer(t *testing.T) {
 	if Bearer("Bearer abc") != "abc" || Bearer("bearer abc") != "abc" || Bearer("Basic abc") != "" || Bearer("") != "" {
 		t.Fatal("bearer parse")
 	}
+	if Bearer("Bearer ab\nc") != "abc" {
+		t.Fatal("bearer should strip hard-wrap whitespace")
+	}
+}
+
+func TestVerifyStripsWhitespace(t *testing.T) {
+	pub, priv, _ := GenerateKey()
+	s, v := NewSigner(priv), NewVerifier(pub)
+	tok, err := s.Mint(Claims{Sub: "a", Aud: AudEnroll}, time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrapped := tok[:64] + "\n" + tok[64:]
+	if _, err := v.VerifyAud(wrapped, AudEnroll); err != nil {
+		t.Fatalf("wrapped jwt: %v", err)
+	}
 }
 
 func TestAudienceIsolation(t *testing.T) {
