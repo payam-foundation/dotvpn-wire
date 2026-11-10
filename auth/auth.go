@@ -180,6 +180,13 @@ func (v *Verifier) VerifyAud(token, aud string) (Claims, error) {
 
 func (v *Verifier) verify(token string) (Claims, error) {
 	var c Claims
+	// Drop whitespace so a hard-wrapped TUI paste still verifies.
+	token = strings.Map(func(r rune) rune {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+			return -1
+		}
+		return r
+	}, token)
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return c, ErrMalformed
@@ -231,10 +238,17 @@ func (v *Verifier) VerifyBlob(data []byte, sig string) error {
 }
 
 // Bearer extracts the token from an "Authorization"-style header value.
+// Internal whitespace is stripped so hard-wrapped pastes still work.
 func Bearer(h string) string {
 	const p = "Bearer "
 	if len(h) > len(p) && strings.EqualFold(h[:len(p)], p) {
-		return strings.TrimSpace(h[len(p):])
+		tok := h[len(p):]
+		return strings.Map(func(r rune) rune {
+			if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+				return -1
+			}
+			return r
+		}, tok)
 	}
 	return ""
 }
