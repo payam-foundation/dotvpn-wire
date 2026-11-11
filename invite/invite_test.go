@@ -30,4 +30,18 @@ func TestRoundTrip(t *testing.T) {
 	if err != nil || out.Account != "ak_1" {
 		t.Fatalf("hard-wrapped invite: %v %+v", err, out)
 	}
+
+	chrome := "Invite for davod (shown once, copy it now):\n\n" + wrapped +
+		"\n\n(855 chars — select every line of the value above)"
+	out, err = DecodeInvite(chrome)
+	if err != nil || out.Account != "ak_1" {
+		t.Fatalf("tui chrome paste: %v %+v", err, out)
+	}
+
+	// Trailing alphanumeric prose must not glue into the base64 payload.
+	glued := enc + "\n\nCopied!"
+	out, err = DecodeInvite(glued)
+	if err != nil || out.Account != "ak_1" {
+		t.Fatalf("trailing prose paste: %v %+v", err, out)
+	}
 }

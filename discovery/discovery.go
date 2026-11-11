@@ -124,6 +124,8 @@ type Client struct {
 	Channels   []ControlChannel
 	Verifier   *auth.Verifier
 	AccountKey string
+	// DeviceID is a stable per-install id used for concurrent-device seats.
+	DeviceID string
 	// Relays are private community (or private curated) relay ids the client
 	// has opted into; control includes them in the signed list when minting.
 	Relays []string
@@ -187,6 +189,9 @@ func (c *Client) viaChannel(ctx context.Context, ch ControlChannel) (Result, err
 		host = ch.Host
 	}
 	payload := map[string]any{"account_key": c.AccountKey}
+	if c.DeviceID != "" {
+		payload["device_id"] = c.DeviceID
+	}
 	if len(c.Relays) > 0 {
 		payload["relays"] = c.Relays
 	}
