@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"unicode"
 
 	"github.com/payam-foundation/dotvpn-wire/discovery"
 	"github.com/payam-foundation/dotvpn-wire/transport"
@@ -36,24 +37,54 @@ func (i Invite) Encode() string {
 }
 
 // DecodeInvite parses Encode output. Surrounding and internal whitespace
-// (hard-wrapped TUI paste) is ignored.
+// (hard-wrapped TUI paste) is ignored. TUI chrome around the URI
+// ("Invite for …", "(855 chars — select…)", "Copied!") is stripped by
+// extracting the first dotvpn:// + base64url run and peeling trailing
+// junk until the payload is valid JSON with a trusted key.
 func DecodeInvite(s string) (Invite, error) {
 	var i Invite
-	s = stripSpace(s)
+	s = extractInvite(s)
 	if !strings.HasPrefix(s, invitePrefix) {
 		return i, errors.New("invite: missing dotvpn:// prefix")
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(s, invitePrefix))
-	if err != nil {
-		return i, errors.New("invite: bad encoding")
+	payload := strings.TrimPrefix(s, invitePrefix)
+	for len(payload) > 0 {
+		raw, err := base64.RawURLEncoding.DecodeString(payload)
+		if err == nil {
+			var cand Invite
+			if json.Unmarshal(raw, &cand) == nil && len(cand.TrustedKey) > 0 {
+				return cand, nil
+			}
+		}
+		payload = payload[:len(payload)-1]
 	}
-	if err := json.Unmarshal(raw, &i); err != nil {
-		return i, errors.New("invite: bad content")
+	return i, errors.New("invite: bad encoding")
+}
+
+// extractInvite keeps the first dotvpn://… base64url token and drops any
+// leading/trailing prose the operator TUI prints around it. Whitespace
+// inside the payload is skipped (hard-wrapped pastes). Trailing letters
+// that glued on (e.g. "Copied!") are peeled in DecodeInvite.
+func extractInvite(s string) string {
+	start := strings.Index(s, invitePrefix)
+	if start < 0 {
+		return stripSpace(s)
 	}
-	if len(i.TrustedKey) == 0 {
-		return i, errors.New("invite: no trusted key")
+	s = s[start:]
+	payload := s[len(invitePrefix):]
+	var b strings.Builder
+	b.Grow(len(invitePrefix) + len(payload))
+	b.WriteString(invitePrefix)
+	for _, r := range payload {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+			continue
+		}
+		if r > unicode.MaxASCII || !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_') {
+			break
+		}
+		b.WriteRune(r)
 	}
-	return i, nil
+	return b.String()
 }
 
 func stripSpace(s string) string {

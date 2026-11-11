@@ -180,15 +180,29 @@ var (
 )
 
 // StatusError is a non-success reply from the node.
-type StatusError struct{ Code int }
+type StatusError struct {
+	Code int
+	// Body is a short snippet of the response body when the node explained the
+	// failure (e.g. HTTP/2 rejected a connection-specific header with 400).
+	Body string
+}
 
 // Error reports the node's status code.
 func (e *StatusError) Error() string {
-	return fmt.Sprintf("transport: node replied %d %s", e.Code, http.StatusText(e.Code))
+	msg := fmt.Sprintf("transport: node replied %d %s", e.Code, http.StatusText(e.Code))
+	if e.Body != "" {
+		msg += ": " + e.Body
+	}
+	return msg
 }
 
 // ErrorFromStatus converts a node reply code to an error (nil for 200).
 func ErrorFromStatus(code int) error {
+	return ErrorFromStatusBody(code, "")
+}
+
+// ErrorFromStatusBody is ErrorFromStatus with an optional response-body snippet.
+func ErrorFromStatusBody(code int, body string) error {
 	switch code {
 	case http.StatusOK:
 		return nil
@@ -201,7 +215,7 @@ func ErrorFromStatus(code int) error {
 	case http.StatusBadGateway:
 		return ErrBadGateway
 	}
-	return &StatusError{Code: code}
+	return &StatusError{Code: code, Body: body}
 }
 
 // StatusFromError is the inverse, used by server adapters.

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -196,9 +197,13 @@ func openConnect(ctx context.Context, rt http.RoundTripper, authority, token str
 			return nil, res.err
 		}
 		if err := ErrorFromStatus(res.resp.StatusCode); err != nil {
+			body, _ := io.ReadAll(io.LimitReader(res.resp.Body, 256))
 			_ = res.resp.Body.Close()
 			cancel()
 			_ = pw.Close()
+			if se, ok := err.(*StatusError); ok {
+				se.Body = strings.TrimSpace(string(body))
+			}
 			return nil, err
 		}
 		cs := NewClientStream(&cancelBody{ReadCloser: res.resp.Body, cancel: cancel}, pw, carrier)
