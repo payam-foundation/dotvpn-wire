@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/payam-foundation/dotvpn-wire/compare/v0.3.1...v0.4.0) (2026-11-11)
+
+
+### Features
+
+* **discovery,invite,transport:** device seats, paste chrome, status body ([#18](https://github.com/payam-foundation/dotvpn-wire/issues/18)) ([138e906](https://github.com/payam-foundation/dotvpn-wire/commit/138e9061f0e92691039e5042942aead95268cdf7))
+
 ## [0.3.1](https://github.com/payam-foundation/dotvpn-wire/compare/v0.3.0...v0.3.1) (2026-11-10)
 
 
