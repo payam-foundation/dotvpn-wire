@@ -250,7 +250,7 @@ type Backend interface {
 
 // DialTCP connects with the socket options in o.
 func DialTCP(ctx context.Context, addr string, o Options) (net.Conn, error) {
-	d := net.Dialer{Timeout: o.Timeout(), KeepAlive: 30 * time.Second, Control: o.Control, Resolver: o.Resolver}
+	d := net.Dialer{Timeout: o.Timeout(), KeepAlive: KeepAliveInterval, Control: o.Control, Resolver: o.Resolver}
 	if o.Upstream != "" {
 		return dialUpstream(ctx, &d, o.Upstream, addr)
 	}
