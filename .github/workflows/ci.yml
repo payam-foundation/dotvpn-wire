@@ -67,7 +67,7 @@ jobs:
           exit-code: "1"
 
   # Runs the censorship lab (dotvpn-lab) against this PR. Needs a fine-grained
-  # token with actions:write on dotvpn-lab in the LAB_DISPATCH_TOKEN secret;
+  # token (CI_TOKEN secret; needs actions:write on dotvpn-lab);
   # without it the job is a no-op. The lab run is not linked back to this PR's
   # status: read it in the dotvpn-lab Actions tab.
   lab:
@@ -77,8 +77,8 @@ jobs:
     permissions: {}
     steps:
       - env:
-          GH_TOKEN: ${{ secrets.LAB_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ secrets.CI_TOKEN }}
           REF: ${{ github.event.pull_request.head.sha }}
         run: |
-          [ -n "$GH_TOKEN" ] || { echo "LAB_DISPATCH_TOKEN not set; skipping lab"; exit 0; }
+          [ -n "$GH_TOKEN" ] || { echo "CI_TOKEN not set; skipping lab"; exit 0; }
           gh workflow run lab -R payam-foundation/dotvpn-lab -f wire_ref="$REF"
