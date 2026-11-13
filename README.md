@@ -16,7 +16,7 @@ It is a Go library only. There are no binaries.
 
 ## Status
 
-Beta. The current wire version is `v0.2.0`. Expect breaking changes before `v1.0.0`; each one is announced as a major or minor version according to the [versioning contract](#versioning-and-compatibility).
+Beta. The current release is `v0.5.0`. Expect breaking changes before `v1.0.0`; each one is announced as a major or minor version according to the [versioning contract](#versioning-and-compatibility).
 
 ## What it provides
 
@@ -28,7 +28,7 @@ Beta. The current wire version is `v0.2.0`. Expect breaking changes before `v1.0
 | Probe resistance | `mimic` | A Chrome-like TLS ClientHello that carries an HMAC knock, and a classifier that tells a valid knock from a probe so the server can fall back to a decoy. |
 | Carriers | `transport` and its adapters | One `Dialer` / `Listener` / `Backend` interface over HTTP/2 CONNECT, HTTP/3 CONNECT, CDN WebSocket, WebTunnel, Snowflake, a reverse pool and an in-memory transport for tests. TLS pins are checked in `VerifyConnection`, so they survive session resumption. |
 | DNS carrier | `dnscarrier` | A DNS-shaped UDP carrier with KCP on top, for networks that let little else through. |
-| Discovery and invites | `discovery`, `invite` | A signed server list and the `dv://` invite string. |
+| Discovery and invites | `discovery`, `invite` | A signed server list in two blobs (clear bootstrap, encrypted fleet), and the `dv://` account and signed `dvr://` relay invite strings. |
 | Safety helpers | `loopback`, `atomicfile` | Loopback-only listener checks for admin surfaces, and atomic 0600 config writes. |
 
 ## Architecture
@@ -55,7 +55,7 @@ flowchart TB
 ## Use it
 
 ```sh
-go get github.com/payam-foundation/dotvpn-wire@v0.2.0
+go get github.com/payam-foundation/dotvpn-wire@v0.5.0
 ```
 
 Mint a short-lived token on the control plane and verify it offline on a node:
@@ -82,7 +82,14 @@ Semantic versioning. The wire contract is `handshake.Version` plus the golden ve
 - A wire major bump is a flag day for core, relay and client. Roll all three forward or back together.
 - Every length-prefixed reader has a size cap, and every parser has a fuzz target.
 
-Design decisions are recorded as ADRs: [Ed25519 JWT](docs/adr/003-ed25519-jwt.md), [direct and CDN carriers](docs/adr/004-connect-direct-websocket-cdn.md), [Snowflake and WebTunnel infrastructure](docs/adr/007-own-infra-snowflake-webtunnel.md), [signed server list](docs/adr/008-signed-server-list-discovery.md), [versioning](docs/adr/011-wire-versioning.md), [ECH policy](docs/adr/017-ech-policy.md) and [UDP over tunnel streams](docs/adr/018-udp-over-tunnel-streams.md).
+## Design notes
+
+- **Tokens.** Ed25519 JWTs live 15 minutes, so a node verifies offline and a stolen node cannot mint. Revocation is short life plus a pushed deny-list.
+- **Carriers.** Direct nodes speak HTTP/2 or HTTP/3 `CONNECT`. CDNs do not reliably forward `CONNECT`, so the CDN carrier is a WebSocket with smux over a few pooled sockets. WebTunnel and Snowflake run on infrastructure you operate; Tor's public Snowflake pool only relays to Tor bridges.
+- **Discovery.** Control signs the server list, so it can travel over any channel. The clear bootstrap blob lists live public relays only. The fleet blob is AES-256-GCM with an outer Ed25519 signature; its key arrives only in an authenticated token response, so a scraped mirror yields nothing.
+- **ECH.** `Endpoint.Params["ech"]` is `auto` (use a config if found), `require` (fail closed) or a base64 `ECHConfigList`. Configs are fetched over DNS-over-HTTPS to pinned resolver IPs. The Chrome preset sends ECH GREASE either way, so the hello shape is constant.
+- **UDP.** A stream kind: length-framed datagrams (`u16 length | payload`, at most 1472 bytes) over an authenticated stream. Nodes advertise `udp=1`; older peers interoperate without it.
+- **Invites.** Only `dv://` and `dvr://` exist. `dvr://` is control-signed and carries the relay's expanded endpoints so a blocked-path client can cold-start; verify before dialing.
 
 ## Development
 
@@ -102,11 +109,9 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Report vulnerabilities as describ
 
 | Repository | Role |
 |---|---|
-| [dotvpn-core](https://github.com/payam-foundation/dotvpn-core) | Server: edge node, control plane, relay enrollment |
 | [dotvpn-relay](https://github.com/payam-foundation/dotvpn-relay) | In-country stealth hop |
 | [dotvpn-client](https://github.com/payam-foundation/dotvpn-client) | Client library and `dotvpn` CLI |
 | [dotvpn-android](https://github.com/payam-foundation/dotvpn-android) | Android app |
-| [dotvpn-lab](https://github.com/payam-foundation/dotvpn-lab) | Censorship lab, black-box tests, cross-repo architecture and ADR index |
 
 ## License
 
