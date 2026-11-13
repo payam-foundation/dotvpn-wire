@@ -28,7 +28,7 @@ go test -run '^$' -fuzz '^Name$' -fuzztime 30s ./pkg   # FuzzRead (frame), FuzzR
 
 ## Docs
 
-`docs/adr/`: ADR-003, 004, 007, 008, 011, 017, 018. Cross-repo index: `../dotvpn-lab/docs/adr/README.md`.
+`docs/adr/`: ADR-003, 004, 007, 008, 011, 017, 018, 019, 023. Cross-repo index: `../dotvpn-lab/docs/adr/README.md`.
 
 ## Flow
 
