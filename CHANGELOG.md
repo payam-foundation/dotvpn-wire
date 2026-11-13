@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/payam-foundation/dotvpn-wire/compare/v0.4.0...v0.5.0) (2026-11-13)
+
+
+### Features
+
+* **discovery,invite:** dual-blob fleet discovery, relay invite scheme, mirror policy ([#23](https://github.com/payam-foundation/dotvpn-wire/issues/23)) ([ead3a80](https://github.com/payam-foundation/dotvpn-wire/commit/ead3a8032820b8296eb5b04d2b52d74a7f15d2a3))
+
+
+### Bug Fixes
+
+* **transport:** share one keepalive profile across h2, h3, smux and reverse ([#22](https://github.com/payam-foundation/dotvpn-wire/issues/22)) ([f97f506](https://github.com/payam-foundation/dotvpn-wire/commit/f97f506c8ec6f4e4062f712460f7b1d013b8fe1d))
+
 ## [0.4.0](https://github.com/payam-foundation/dotvpn-wire/compare/v0.3.1...v0.4.0) (2026-11-11)
 
 
