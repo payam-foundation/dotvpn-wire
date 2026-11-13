@@ -94,7 +94,7 @@ type Session interface {
 	Close() error
 }
 
-// UDPSession is a Session that can also carry UDP flows (ADR-018). OpenUDP
+// UDPSession is a Session that can also carry UDP flows (ADR-009). OpenUDP
 // returns a datagram-preserving conn: each Write is one datagram, each Read
 // one datagram, like a connected UDP socket to authority ("host:port"). Only
 // use it when the endpoint advertises it (Endpoint.UDP): an older node would
@@ -291,7 +291,7 @@ func CandidateAddrs(ep Endpoint) []string {
 // DialTLS runs the client handshake over raw and returns the secured conn and
 // the negotiated ALPN protocol. It is the single place where the TLS
 // fingerprint of the client is decided: a Chrome ClientHello (uTLS), with
-// ECH per Endpoint.Params["ech"] (see ECHAuto, ECHRequire; ADR-017).
+// ECH per Endpoint.Params["ech"] (see ECHAuto, ECHRequire; ADR-008).
 //
 // raw must be a fresh connection to ep.Addr: when the server rejects ECH and
 // offers retry configs, DialTLS dials ep.Addr again and retries once.

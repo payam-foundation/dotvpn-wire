@@ -20,7 +20,7 @@ import (
 // handshake cannot use ECH. The endpoint must not be dialled without it.
 var ErrECHRequired = errors.New("transport: ech required but not available")
 
-// ECH policy values for Endpoint.Params["ech"] (ADR-017).
+// ECH policy values for Endpoint.Params["ech"] (ADR-008).
 const (
 	// ECHAuto tries ECH when the HTTPS record has a config. Without one the
 	// handshake continues with the ECH GREASE extension the Chrome preset

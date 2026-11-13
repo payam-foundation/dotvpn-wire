@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Golden vector: the frame layout is part of the wire contract (ADR-018).
+// Golden vector: the frame layout is part of the wire contract (ADR-009).
 func TestGoldenFrame(t *testing.T) {
 	got, err := Append(nil, []byte("hi!"))
 	if err != nil {

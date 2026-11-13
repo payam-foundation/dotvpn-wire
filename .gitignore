@@ -3,3 +3,14 @@
 *.out
 .env
 *.key
+.DS_Store
+.idea/
+.vscode/
+go.work
+go.work.sum
+coverage.out
+*.pem
+.env.*
+.vitest/
+!.env.example
+!.env.*.example
