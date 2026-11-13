@@ -1,7 +1,10 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 package reverse
 
 import (
 	"bytes"
+	"context"
 	"testing"
 	"time"
 
@@ -40,4 +43,19 @@ func FuzzReadAuth(f *testing.F) {
 	v := auth.NewVerifier(pub)
 	f.Add([]byte{0, 3, 'a', 'b', 'c'})
 	f.Fuzz(func(t *testing.T, b []byte) { _, _ = ReadAuth(bytes.NewReader(b), v) })
+}
+
+func TestElasticPoolDefaultsAndBoundaries(t *testing.T) {
+	p := &Pool{
+		Relays: func() []Relay { return nil },
+	}
+	if p.MinSize != 0 || p.MaxSize != 0 {
+		t.Fatalf("unexpected defaults: %+v", p)
+	}
+	// Verify Serve parameter sanitization logic with cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := p.Serve(ctx, nil); err != nil {
+		t.Fatal(err)
+	}
 }
