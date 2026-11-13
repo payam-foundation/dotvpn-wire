@@ -37,8 +37,10 @@ type ControlChannel struct {
 
 // List is the content of a server list.
 type List struct {
-	Issued    int64                `json:"issued"`
-	Endpoints []transport.Endpoint `json:"endpoints"`
+	Issued     int64                `json:"issued"`
+	Generation int64                `json:"generation,omitempty"`
+	Policy     ServerListPolicy     `json:"policy,omitempty"`
+	Endpoints  []transport.Endpoint `json:"endpoints"`
 }
 
 // Signed is a List with a detached signature, safe to relay or cache.
@@ -99,10 +101,13 @@ func Decode(text string) (Signed, error) {
 
 // TokenResponse is the control plane's reply to POST /v1/token.
 type TokenResponse struct {
-	Token   string `json:"token"`
-	Expires int64  `json:"expires"`
-	Now     int64  `json:"now"` // control plane clock, for skew anchoring
-	Servers Signed `json:"servers"`
+	Token      string   `json:"token"`
+	Expires    int64    `json:"expires"`
+	Now        int64    `json:"now"` // control plane clock, for skew anchoring
+	Servers    Signed   `json:"servers"`
+	FleetKey   string   `json:"fleet_key,omitempty"` // raw URL-safe key material
+	FleetKeyID string   `json:"fleet_key_id,omitempty"`
+	FleetURLs  []string `json:"fleet_urls,omitempty"` // S3/GH object URLs
 }
 
 // Result is what a Refresh yields.
@@ -113,10 +118,14 @@ type Result struct {
 	// Skew is control-plane time minus local time; clients with wrong clocks
 	// use it to judge token expiry.
 	Skew time.Duration
-	// Source says which channel answered ("control", "cache", "bootstrap").
+	// Source says which channel answered ("control", "cache", "bootstrap", "fleet").
 	Source string
 	// Signed is the verified list as received, for caching and re-serving.
-	Signed Signed
+	Signed     Signed
+	FleetKey   string
+	FleetKeyID string
+	FleetURLs  []string
+	Generation int64
 }
 
 // Client talks to the control plane over an ordered list of channels.
@@ -132,15 +141,27 @@ type Client struct {
 	// CachePath persists the last good Signed list so the next start works
 	// with every channel blocked. Empty disables caching.
 	CachePath string
+	// Mirrors are HTTPS URLs for the clear bootstrap blob (Worker / CDN).
+	Mirrors []string
 	// Bootstrap is an embedded Signed list (Encode form) used as a last resort.
 	Bootstrap string
+	// FleetKey / FleetKeyID persist the last authenticated unwrap material.
+	FleetKey   string
+	FleetKeyID string
+	// FleetURLs are encrypted fleet mirror URLs from the last token response.
+	FleetURLs []string
 	// HTTP is the HTTP client; the zero value uses a 15s timeout.
 	HTTP *http.Client
 	// ChannelHTTP, when set, returns the HTTP client for one channel (relay
 	// tunnels). It wins over HTTP; nil or a nil result falls back to HTTP.
 	ChannelHTTP func(ControlChannel) *http.Client
-	// MaxListAge bounds list freshness for cache and bootstrap. Default 30 days.
+	// OnBootstrapEndpoints is called when a clear bootstrap list is loaded so
+	// callers can feed reverse endpoints into ChannelHTTP before /v1/token.
+	OnBootstrapEndpoints func([]transport.Endpoint)
+	// MaxListAge bounds list freshness for cache and mirrors. Default 30 days.
 	MaxListAge time.Duration
+
+	bootstrapRelay string
 }
 
 func (c *Client) http() *http.Client {
@@ -150,14 +171,21 @@ func (c *Client) http() *http.Client {
 	return &http.Client{Timeout: 15 * time.Second}
 }
 
-// Refresh fetches a token and endpoints. Channels are tried in order; if all
-// fail, the cached list and then the bootstrap list provide endpoints without
-// a token, and the error says why the token is missing.
+// Refresh fetches a token and endpoints.
+//
+// Stages: warm clear bootstrap (mirrors / embedded) → try control channels
+// (auto-attaching ControlChannel.Relay from bootstrap when needed) → unwrap
+// encrypted fleet mirrors with fleet_key → cache. Offline cache/bootstrap
+// remain as last resort without a token.
 func (c *Client) Refresh(ctx context.Context) (Result, error) {
+	c.warmBootstrap(ctx)
+
 	var errs []error
-	for _, ch := range c.Channels {
+	for _, ch := range c.channelsForAttempt() {
 		res, err := c.viaChannel(ctx, ch)
 		if err == nil {
+			res = c.enrichFleet(ctx, res)
+			c.rememberFleet(res)
 			c.saveCache(res)
 			return res, nil
 		}
@@ -166,8 +194,14 @@ func (c *Client) Refresh(ctx context.Context) (Result, error) {
 			break
 		}
 	}
-	if l, src, ok := c.offlineList(); ok {
-		return Result{Endpoints: l.Endpoints, Source: src}, fmt.Errorf("control unreachable, using %s list: %w", src, errors.Join(errs...))
+	res, offlineErrs, ok := c.offlineList(ctx)
+	errs = append(errs, offlineErrs...)
+	if ok {
+		cause := errors.Join(errs...)
+		if cause == nil {
+			cause = errors.New("discovery: no control channels configured")
+		}
+		return res, fmt.Errorf("control unreachable, using %s list: %w", res.Source, cause)
 	}
 	if len(errs) == 0 {
 		return Result{}, errors.New("discovery: no control channels configured")
@@ -175,11 +209,159 @@ func (c *Client) Refresh(ctx context.Context) (Result, error) {
 	return Result{}, fmt.Errorf("discovery: all channels failed: %w", errors.Join(errs...))
 }
 
-func describe(ch ControlChannel) string {
-	if ch.Via != "" {
-		return ch.URL + " via " + ch.Via
+func (c *Client) warmBootstrap(ctx context.Context) {
+	res, _, ok := c.bootstrapSources(ctx)
+	if !ok {
+		return
 	}
-	return ch.URL
+	c.bootstrapRelay = firstReverseAddr(res.Endpoints)
+	if c.OnBootstrapEndpoints != nil && len(res.Endpoints) > 0 {
+		c.OnBootstrapEndpoints(res.Endpoints)
+	}
+}
+
+func (c *Client) channelsForAttempt() []ControlChannel {
+	out := append([]ControlChannel(nil), c.Channels...)
+	if c.bootstrapRelay == "" {
+		return out
+	}
+	// After directs, retry channels that had no Relay using the bootstrap relay.
+	for _, ch := range c.Channels {
+		if ch.Relay == "" {
+			cp := ch
+			cp.Relay = c.bootstrapRelay
+			out = append(out, cp)
+		}
+	}
+	return out
+}
+
+func firstReverseAddr(eps []transport.Endpoint) string {
+	for _, ep := range eps {
+		if (ep.Kind == "reverse" || ep.Kind == "dns") && ep.Addr != "" {
+			return ep.Addr
+		}
+	}
+	return ""
+}
+
+func (c *Client) rememberFleet(r Result) {
+	if r.FleetKey != "" {
+		c.FleetKey = r.FleetKey
+	}
+	if r.FleetKeyID != "" {
+		c.FleetKeyID = r.FleetKeyID
+	}
+	if len(r.FleetURLs) > 0 {
+		c.FleetURLs = append([]string(nil), r.FleetURLs...)
+	}
+}
+
+func (c *Client) enrichFleet(ctx context.Context, res Result) Result {
+	key := res.FleetKey
+	if key == "" {
+		key = c.FleetKey
+	}
+	kid := res.FleetKeyID
+	if kid == "" {
+		kid = c.FleetKeyID
+	}
+	urls := res.FleetURLs
+	if len(urls) == 0 {
+		urls = c.FleetURLs
+	}
+	if key == "" || len(urls) == 0 || c.Verifier == nil {
+		return res
+	}
+	rawKey, err := DecodeFleetKey(key)
+	if err != nil {
+		return res
+	}
+	for _, u := range urls {
+		fb, err := c.fetchFleetBlob(ctx, u)
+		if err != nil {
+			continue
+		}
+		inner, err := OpenFleet(c.Verifier, kid, rawKey, fb)
+		if err != nil {
+			continue
+		}
+		list, err := Open(c.Verifier, inner, c.maxAge())
+		if err != nil {
+			continue
+		}
+		if res.Generation > 0 && list.Generation > 0 && list.Generation < res.Generation {
+			continue // refuse older fleet than bootstrap/token generation
+		}
+		res.Endpoints = list.Endpoints
+		res.Signed = inner
+		res.Source = "fleet"
+		res.Generation = list.Generation
+		res.FleetKey = key
+		res.FleetKeyID = kid
+		res.FleetURLs = append([]string(nil), urls...)
+		return res
+	}
+	return res
+}
+
+func (c *Client) fetchFleetBlob(ctx context.Context, mirror string) (FleetBlob, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mirror, nil)
+	if err != nil {
+		return FleetBlob{}, err
+	}
+	resp, err := c.http().Do(req)
+	if err != nil {
+		return FleetBlob{}, err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return FleetBlob{}, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return FleetBlob{}, fmt.Errorf("fleet mirror replied %d", resp.StatusCode)
+	}
+	text := strings.TrimSpace(string(raw))
+	var fb FleetBlob
+	if err := json.Unmarshal([]byte(text), &fb); err != nil {
+		return FleetBlob{}, err
+	}
+	return fb, nil
+}
+
+func (c *Client) bootstrapSources(ctx context.Context) (Result, []error, bool) {
+	var errs []error
+	for _, mirror := range c.Mirrors {
+		res, err := c.viaMirror(ctx, mirror)
+		if err == nil {
+			res.Source = "bootstrap"
+			return res, errs, true
+		}
+		errs = append(errs, fmt.Errorf("mirror %s: %w", mirror, err))
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	if c.Bootstrap != "" {
+		if s, err := Decode(c.Bootstrap); err == nil {
+			if l, err := Open(c.Verifier, s, 0); err == nil {
+				return Result{Endpoints: l.Endpoints, Source: "bootstrap", Signed: s, Generation: l.Generation}, errs, true
+			}
+		}
+	}
+	return Result{}, errs, false
+}
+
+func describe(ch ControlChannel) string {
+	s := ch.URL
+	if ch.Via != "" {
+		s = ch.URL + " via " + ch.Via
+	}
+	if ch.Relay != "" {
+		s += " relay " + ch.Relay
+	}
+	return s
 }
 
 func (c *Client) viaChannel(ctx context.Context, ch ControlChannel) (Result, error) {
@@ -229,12 +411,16 @@ func (c *Client) viaChannel(ctx context.Context, ch ControlChannel) (Result, err
 		return Result{}, fmt.Errorf("server list: %w", err)
 	}
 	return Result{
-		Token:     tr.Token,
-		Expires:   time.Unix(tr.Expires, 0),
-		Endpoints: l.Endpoints,
-		Skew:      time.Until(time.Unix(tr.Now, 0)),
-		Source:    "control",
-		Signed:    tr.Servers,
+		Token:      tr.Token,
+		Expires:    time.Unix(tr.Expires, 0),
+		Endpoints:  l.Endpoints,
+		Skew:       time.Until(time.Unix(tr.Now, 0)),
+		Source:     "control",
+		Signed:     tr.Servers,
+		FleetKey:   tr.FleetKey,
+		FleetKeyID: tr.FleetKeyID,
+		FleetURLs:  append([]string(nil), tr.FleetURLs...),
+		Generation: l.Generation,
 	}, nil
 }
 
@@ -245,24 +431,79 @@ func (c *Client) maxAge() time.Duration {
 	return 30 * 24 * time.Hour
 }
 
-func (c *Client) offlineList() (List, string, bool) {
+func (c *Client) offlineList(ctx context.Context) (Result, []error, bool) {
 	if c.CachePath != "" {
 		if b, err := os.ReadFile(c.CachePath); err == nil {
 			if s, err := Decode(string(b)); err == nil {
 				if l, err := Open(c.Verifier, s, c.maxAge()); err == nil {
-					return l, "cache", true
+					return Result{Endpoints: l.Endpoints, Source: "cache", Signed: s}, nil, true
 				}
 			}
+		}
+	}
+	var errs []error
+	for _, mirror := range c.Mirrors {
+		res, err := c.viaMirror(ctx, mirror)
+		if err == nil {
+			return res, errs, true
+		}
+		errs = append(errs, fmt.Errorf("mirror %s: %w", mirror, err))
+		if ctx.Err() != nil {
+			break
 		}
 	}
 	if c.Bootstrap != "" {
 		if s, err := Decode(c.Bootstrap); err == nil {
 			if l, err := Open(c.Verifier, s, 0); err == nil {
-				return l, "bootstrap", true
+				return Result{Endpoints: l.Endpoints, Source: "bootstrap", Signed: s}, errs, true
 			}
 		}
 	}
-	return List{}, "", false
+	return Result{}, errs, false
+}
+
+func (c *Client) viaMirror(ctx context.Context, mirror string) (Result, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mirror, nil)
+	if err != nil {
+		return Result{}, fmt.Errorf("create request: %w", err)
+	}
+	resp, err := c.http().Do(req)
+	if err != nil {
+		return Result{}, fmt.Errorf("get: %w", err)
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return Result{}, fmt.Errorf("read response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return Result{}, fmt.Errorf("replied %d", resp.StatusCode)
+	}
+	s, err := decodeMirror(string(raw))
+	if err != nil {
+		return Result{}, fmt.Errorf("decode: %w", err)
+	}
+	l, err := Open(c.Verifier, s, c.maxAge())
+	if err != nil {
+		return Result{}, fmt.Errorf("server list: %w", err)
+	}
+	return Result{Endpoints: l.Endpoints, Source: "mirror", Signed: s}, nil
+}
+
+func decodeMirror(text string) (Signed, error) {
+	text = strings.TrimSpace(text)
+	if strings.HasPrefix(text, "{") {
+		var s Signed
+		if err := json.Unmarshal([]byte(text), &s); err != nil {
+			return Signed{}, fmt.Errorf("JSON signed list: %w", err)
+		}
+		return s, nil
+	}
+	s, err := Decode(text)
+	if err != nil {
+		return Signed{}, fmt.Errorf("encoded signed list: %w", err)
+	}
+	return s, nil
 }
 
 func (c *Client) saveCache(r Result) {

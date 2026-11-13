@@ -28,7 +28,7 @@ Beta. The current wire version is `v0.2.0`. Expect breaking changes before `v1.0
 | Probe resistance | `mimic` | A Chrome-like TLS ClientHello that carries an HMAC knock, and a classifier that tells a valid knock from a probe so the server can fall back to a decoy. |
 | Carriers | `transport` and its adapters | One `Dialer` / `Listener` / `Backend` interface over HTTP/2 CONNECT, HTTP/3 CONNECT, CDN WebSocket, WebTunnel, Snowflake, a reverse pool and an in-memory transport for tests. TLS pins are checked in `VerifyConnection`, so they survive session resumption. |
 | DNS carrier | `dnscarrier` | A DNS-shaped UDP carrier with KCP on top, for networks that let little else through. |
-| Discovery and invites | `discovery`, `invite` | A signed server list and the `dotvpn://` invite string. |
+| Discovery and invites | `discovery`, `invite` | A signed server list and the `dv://` invite string. |
 | Safety helpers | `loopback`, `atomicfile` | Loopback-only listener checks for admin surfaces, and atomic 0600 config writes. |
 
 ## Architecture
