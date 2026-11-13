@@ -33,8 +33,8 @@ const (
 
 func config() *smux.Config {
 	c := smux.DefaultConfig()
-	c.KeepAliveInterval = 15 * time.Second
-	c.KeepAliveTimeout = 45 * time.Second
+	c.KeepAliveInterval = transport.KeepAliveInterval
+	c.KeepAliveTimeout = transport.KeepAliveTimeout
 	return c
 }
 

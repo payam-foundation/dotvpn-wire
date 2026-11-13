@@ -47,8 +47,10 @@ const (
 	ParamZone  = "zone"  // DNS zone (dns)
 )
 
-// DefaultIdle is the cover-traffic interval on pooled connections.
-const DefaultIdle = 25 * time.Second
+// DefaultIdle is the cover-traffic interval on pooled connections. Kept in
+// lockstep with transport.KeepAliveInterval so quiet reverse links refresh
+// middlebox state before the common ~30s idle floor.
+const DefaultIdle = transport.KeepAliveInterval
 
 // PoolKnockKey is the knock key of node->relay pool connections.
 func PoolKnockKey(relay ed25519.PublicKey) []byte { return mimic.KnockKey("pool", relay) }
