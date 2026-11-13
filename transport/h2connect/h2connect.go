@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"sync/atomic"
-	"time"
 
 	"golang.org/x/net/http2"
 
@@ -37,9 +36,9 @@ func (d Dialer) Dial(ctx context.Context, ep transport.Endpoint, tok transport.T
 	// wraps a pre-dialled conn with ping tuning; migrate when http.ClientConn covers it.
 	t := &http2.Transport{
 		StrictMaxConcurrentStreams: true,
-		ReadIdleTimeout:            15 * time.Second,
-		PingTimeout:                10 * time.Second,
-		WriteByteTimeout:           30 * time.Second,
+		ReadIdleTimeout:            transport.KeepAliveInterval,
+		PingTimeout:                transport.PingTimeout,
+		WriteByteTimeout:           transport.WriteByteTimeout,
 	}
 	cc, err := t.NewClientConn(conn)
 	if err != nil {

@@ -29,8 +29,8 @@ func quicConfig(timeout time.Duration) *quic.Config {
 		// on-path DPI that only decrypts v1 Initials cannot read the SNI.
 		Versions:             []quic.Version{quic.Version2, quic.Version1},
 		InitialPacketSize:    1200,
-		KeepAlivePeriod:      15 * time.Second,
-		MaxIdleTimeout:       45 * time.Second,
+		KeepAlivePeriod:      transport.KeepAliveInterval,
+		MaxIdleTimeout:       transport.MaxIdleTimeout,
 		HandshakeIdleTimeout: timeout,
 	}
 }
@@ -126,8 +126,8 @@ func Serve(ctx context.Context, addr string, tlsCfg *tls.Config, h http.Handler)
 		Addr:        addr,
 		TLSConfig:   tlsCfg,
 		Handler:     h,
-		QUICConfig:  quicConfig(15 * time.Second),
-		IdleTimeout: 5 * time.Minute,
+		QUICConfig:  quicConfig(transport.KeepAliveTimeout),
+		IdleTimeout: transport.MaxIdleTimeout,
 	}
 	go func() {
 		<-ctx.Done()
