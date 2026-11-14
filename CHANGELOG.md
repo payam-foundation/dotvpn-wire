@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/payam-foundation/dotvpn-wire/compare/v0.5.0...v0.6.0) (2026-11-14)
+
+
+### Features
+
+* **frame:** quantize record sizes to fixed buckets ([#28](https://github.com/payam-foundation/dotvpn-wire/issues/28)) ([8fe9ebf](https://github.com/payam-foundation/dotvpn-wire/commit/8fe9ebfe9ec616c2271163e5da506c6139de0bf6))
+* **reverse:** implement elastic pool sizing and burst refill ([#27](https://github.com/payam-foundation/dotvpn-wire/issues/27)) ([9e4462e](https://github.com/payam-foundation/dotvpn-wire/commit/9e4462ecd2a391e6c81c3e701c75e6a6dffba44f))
+
 ## [0.5.0](https://github.com/payam-foundation/dotvpn-wire/compare/v0.4.0...v0.5.0) (2026-11-13)
 
 
