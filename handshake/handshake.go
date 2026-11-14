@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package handshake is the X25519 session setup of the wire protocol.
 //
 //	initiator -> responder: ephC(32) | padlen^ephC[31] (1) | pad

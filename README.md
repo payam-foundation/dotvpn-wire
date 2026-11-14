@@ -8,7 +8,7 @@
 [![CI](https://github.com/payam-foundation/dotvpn-wire/actions/workflows/ci.yml/badge.svg)](https://github.com/payam-foundation/dotvpn-wire/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/payam-foundation/dotvpn-wire?include_prereleases)](https://github.com/payam-foundation/dotvpn-wire/releases)
 [![Status: beta](https://img.shields.io/badge/status-beta-orange)](#status)
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)](LICENSE)
+[![License: AGPL-3.0 or PolyForm Noncommercial](https://img.shields.io/badge/license-AGPL--3.0%20%7C%20PolyForm%20NC-blue)](#license)
 
 The shared wire protocol of [Dot VPN](#related-repositories): framing, authentication, handshake, carriers and discovery. Core, relay and client import this one library, so they cannot disagree about what goes on the wire.
 
@@ -115,4 +115,4 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Report vulnerabilities as describ
 
 ## License
 
-[PolyForm Noncommercial License 1.0.0](LICENSE). Source-available, not open source: personal, research, educational and non-profit use is permitted; commercial use needs a separate licence from Payam Foundation.
+Dual-licensed, at your option: [GNU AGPL-3.0-only](LICENSE-AGPL-3.0) or [PolyForm Noncommercial License 1.0.0](LICENSE). `dotvpn-client` and `dotvpn-android` use the AGPL option.

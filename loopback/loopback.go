@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package loopback keeps admin and metrics surfaces off the network: an
 // address is accepted only if it is loopback or a unix socket.
 package loopback

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package mem is the in-memory carrier for tests: a Dialer and a Listener
 // joined by net.Pipe, with the same stream layer (muxstream) as the real byte
 // pipe carriers.

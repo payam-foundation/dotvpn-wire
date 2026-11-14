@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package muxstream is the stream layer shared by the byte-pipe carriers
 // (cdnws, webtunnel, snowflake): smux over any net.Conn, with every stream
 // opened by an auth frame so the token travels inside the encrypted carrier.

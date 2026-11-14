@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package invite is the one-string onboarding blob a client pastes to join:
 // endpoints, control channels and the keys that sign its server list. It holds
 // no node secrets.

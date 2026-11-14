@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package frame is the record layer of the wire protocol. Every record is
 //
 //	mask(2) | AEAD(type(1) | n(2) | data(n) | padding)

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package dnscarrier shapes datagrams as DNS. Upstream, a payload becomes the
 // base32 labels of a TXT query under Zone; downstream, the answer to that
 // query is a TXT record holding the payload. A KCP session on top (Dial,

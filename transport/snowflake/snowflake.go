@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package snowflake is the last-resort carrier for blackouts: the client
 // reaches the node through WebRTC volunteer proxies matched by our own broker.
 // The node embeds Tor's snowflake server; every accepted snowflake stream
