@@ -59,3 +59,12 @@ func TestElasticPoolDefaultsAndBoundaries(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestFrameOptsShapesByDefault(t *testing.T) {
+	if (Dialer{}).frameOpts().Pad == nil {
+		t.Fatal("client frames are not shaped by default")
+	}
+	if (Dialer{NoShaping: true}).frameOpts().Pad != nil {
+		t.Fatal("NoShaping must keep the default padding")
+	}
+}

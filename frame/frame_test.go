@@ -134,3 +134,50 @@ func FuzzRead(f *testing.F) {
 		_, _ = io.ReadAll(c)
 	})
 }
+
+func TestQuantizeBuckets(t *testing.T) {
+	ok := map[int]bool{}
+	for _, b := range buckets {
+		ok[b] = true
+	}
+	for n := 0; n <= MaxData; n++ {
+		pad := Quantize(n)
+		if pad < 0 || pad > maxPad {
+			t.Fatalf("Quantize(%d) = %d out of range", n, pad)
+		}
+		if size := overhead + n + pad; !ok[size] {
+			t.Fatalf("n=%d: wire size %d is not a bucket", n, size)
+		}
+	}
+}
+
+// A shaped writer's records are exactly bucket sized on the wire and an
+// unshaped reader still recovers the data.
+func TestQuantizeRoundTrip(t *testing.T) {
+	x, y := net.Pipe()
+	cap := &capture{Conn: x}
+	var k Keys
+	r := Keys{SendKey: k.RecvKey, RecvKey: k.SendKey}
+	a, b := New(cap, k, Opts{Pad: Quantize}), New(y, r, Opts{})
+	msg := bytes.Repeat([]byte("x"), 700)
+	go a.Write(msg)
+	got := make([]byte, len(msg))
+	if _, err := io.ReadFull(b, got); err != nil || !bytes.Equal(got, msg) {
+		t.Fatalf("round trip: %v", err)
+	}
+	if n := cap.buf.Len(); n != 1400 {
+		t.Fatalf("wire bytes = %d, want 1400", n)
+	}
+}
+
+func FuzzQuantize(f *testing.F) {
+	f.Add(0)
+	f.Add(107)
+	f.Add(MaxData)
+	f.Fuzz(func(t *testing.T, n int) {
+		n = min(max(n, 0), MaxData)
+		if size := overhead + n + Quantize(n); size < overhead+n || size > buckets[len(buckets)-1] {
+			t.Fatalf("n=%d size=%d", n, size)
+		}
+	})
+}
