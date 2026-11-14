@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package reverse is the relay carrier. A relay in a restricted country only
 // listens; the core node dials out to it and parks authenticated connections
 // in a pool. A client that reaches the relay is spliced onto a pooled
@@ -199,7 +201,11 @@ type Pool struct {
 	Identity ed25519.PrivateKey
 	// Token returns the current pool token (auth.AudPool, minted by control).
 	Token func() string
-	// Size is idle connections kept per relay. Default 4.
+	// MinSize is the idle baseline connections kept per relay. Default 2.
+	MinSize int
+	// MaxSize is the burst ceiling connections kept per relay. Default 16.
+	MaxSize int
+	// Size is legacy alias for baseline connections when MinSize is not set. Default 4.
 	Size int
 	// MaxIdle is the mean time an idle connection is kept before it is
 	// replaced; each is uniform in [MaxIdle/2, 3*MaxIdle/2]. Default 5m.
@@ -209,11 +215,23 @@ type Pool struct {
 	Log     *slog.Logger
 }
 
-// Serve keeps Size tunnels to the relay, redialing with jitter, and serves
-// streams arriving on them from b until ctx ends.
+// Serve keeps elastic tunnels (MinSize..MaxSize) to the relay, redialing with jitter,
+// and serves streams arriving on them from b until ctx ends.
 func (p *Pool) Serve(ctx context.Context, b transport.Backend) error {
-	if p.Size == 0 {
-		p.Size = 4
+	minSize := p.MinSize
+	if minSize == 0 {
+		if p.Size > 0 {
+			minSize = p.Size
+		} else {
+			minSize = 2
+		}
+	}
+	maxSize := p.MaxSize
+	if maxSize == 0 {
+		maxSize = 16
+	}
+	if maxSize < minSize {
+		maxSize = minSize
 	}
 	if p.MaxIdle == 0 {
 		p.MaxIdle = 5 * time.Minute
@@ -243,10 +261,7 @@ func (p *Pool) Serve(ctx context.Context, b transport.Backend) error {
 			}
 			rctx, cancel := context.WithCancel(ctx)
 			running[k] = cancel
-			for range p.Size {
-				wg.Add(1)
-				go func() { defer wg.Done(); p.slot(rctx, r, b, &wg) }()
-			}
+			p.manageRelay(rctx, r, b, minSize, maxSize, &wg)
 		}
 		select {
 		case <-ctx.Done():
@@ -256,6 +271,44 @@ func (p *Pool) Serve(ctx context.Context, b transport.Backend) error {
 			return nil
 		case <-t.C:
 		}
+	}
+}
+
+func (p *Pool) manageRelay(ctx context.Context, r Relay, b transport.Backend, minSize, maxSize int, wg *sync.WaitGroup) {
+	var mu sync.Mutex
+	activeSlots := 0
+
+	var spawnSlot func(burst bool)
+	spawnSlot = func(burst bool) {
+		mu.Lock()
+		if activeSlots >= maxSize {
+			mu.Unlock()
+			return
+		}
+		activeSlots++
+		mu.Unlock()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			defer func() {
+				mu.Lock()
+				activeSlots--
+				mu.Unlock()
+			}()
+
+			taken := func() {
+				// Immediate refill: a client took this tunnel, so immediately replenish
+				// and spawn an extra slot if under maxSize to handle burst arrivals.
+				spawnSlot(false)
+				spawnSlot(true)
+			}
+			p.slotOnce(ctx, r, b, taken, burst)
+		}()
+	}
+
+	for range minSize {
+		spawnSlot(false)
 	}
 }
 
@@ -272,22 +325,14 @@ func sleep(ctx context.Context, d time.Duration) bool {
 	}
 }
 
-// slot keeps one pooled connection alive for r: connect, wait, serve, repeat.
-// Once a client takes the connection a replacement slot starts at once, so
-// the idle pool stays full while sessions run; this slot then ends with its
-// session.
-func (p *Pool) slot(ctx context.Context, r Relay, b transport.Backend, wg *sync.WaitGroup) {
+func (p *Pool) slotOnce(ctx context.Context, r Relay, b transport.Backend, taken func(), burst bool) {
 	backoff := time.Second
-	taken := func() {
-		wg.Add(1)
-		go func() { defer wg.Done(); p.slot(ctx, r, b, wg) }()
-	}
 	for ctx.Err() == nil {
 		served, err := p.once(ctx, r, b, taken)
 		if err != nil && ctx.Err() == nil {
 			p.Log.Debug("pool connection ended", "relay", r.ID, "err", err)
 		}
-		if served {
+		if served || burst {
 			return
 		}
 		if !sleep(ctx, jitter(backoff)) {
