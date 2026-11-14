@@ -32,6 +32,7 @@ const (
 	MaxData = 16000
 	tagLen  = 16
 	maxSeq  = 1<<62 - 1
+	maxPad  = 16384
 )
 
 // Keys are the per-direction secrets. Send and Recv must be swapped between
@@ -45,7 +46,8 @@ type Keys struct {
 // length bytes and sends no idle cover traffic.
 type Opts struct {
 	// Pad returns the padding bytes to add to a record carrying n data bytes.
-	// Nil means uniform 0-31. It must not be negative or exceed 2048.
+	// Nil means uniform 0-31; Quantize hides sizes behind fixed buckets. The
+	// result is clamped to [0, maxPad].
 	Pad func(n int) int
 	// Idle is the mean interval of cover records when the link is quiet; each
 	// wait is uniform in [Idle/2, 3*Idle/2]. Zero disables cover traffic.
@@ -118,7 +120,7 @@ func randN(n int) int {
 
 func (c *Conn) padFor(n int) int {
 	if c.o.Pad != nil {
-		return min(max(c.o.Pad(n), 0), 2048)
+		return min(max(c.o.Pad(n), 0), maxPad)
 	}
 	return randN(32)
 }
@@ -218,7 +220,11 @@ func (c *Conn) idle() {
 		if time.Since(time.Unix(0, c.lastWrite.Load())) < wait/2 {
 			continue
 		}
-		if c.writeRecord(typePad, make([]byte, randN(256)), randN(64)) != nil {
+		d, pad := randN(256), randN(64)
+		if c.o.Pad != nil { // cover records match the shaped size of data records
+			pad = c.padFor(d)
+		}
+		if c.writeRecord(typePad, make([]byte, d), pad) != nil {
 			return
 		}
 	}

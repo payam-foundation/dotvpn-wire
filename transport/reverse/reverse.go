@@ -123,6 +123,9 @@ func ReadNodeID(r io.Reader) (string, error) {
 type Dialer struct {
 	Opts  transport.Options
 	Frame frame.Opts
+	// NoShaping turns off record size quantization (frame.Quantize), which is
+	// otherwise the default when Frame.Pad is nil.
+	NoShaping bool
 }
 
 // Dial opens a session through a relay's reverse pool to the node named by
@@ -180,6 +183,9 @@ func (d Dialer) frameOpts() frame.Opts {
 	o := d.Frame
 	if o.Idle == 0 {
 		o.Idle = DefaultIdle
+	}
+	if o.Pad == nil && !d.NoShaping {
+		o.Pad = frame.Quantize
 	}
 	return o
 }
@@ -369,6 +375,12 @@ func (p *Pool) once(ctx context.Context, r Relay, b transport.Backend, taken fun
 	// Idle connections are replaced on a random schedule; once a client
 	// arrives the timer is cancelled.
 	idle := time.AfterFunc(jitter(p.MaxIdle), func() { _ = raw.Close() })
+	// The inner session is what a client's path observes after the relay
+	// strips the outer layer, so only it is shaped; shaping both would pad
+	// every record twice.
+	if o.Pad == nil {
+		o.Pad = frame.Quantize
+	}
 	inner, err := handshake.Respond(outer, p.Identity, o)
 	if !idle.Stop() {
 		return false, errors.New("idle rotation")

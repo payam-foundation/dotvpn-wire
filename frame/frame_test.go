@@ -134,3 +134,92 @@ func FuzzRead(f *testing.F) {
 		_, _ = io.ReadAll(c)
 	})
 }
+
+func TestQuantizeBuckets(t *testing.T) {
+	ok := map[int]bool{}
+	for _, b := range buckets {
+		ok[b] = true
+	}
+	for n := 0; n <= MaxData; n++ {
+		pad := Quantize(n)
+		if pad < 0 || pad > maxPad {
+			t.Fatalf("Quantize(%d) = %d out of range", n, pad)
+		}
+		if size := overhead + n + pad; !ok[size] {
+			t.Fatalf("n=%d: wire size %d is not a bucket", n, size)
+		}
+	}
+}
+
+// A shaped writer's records are exactly bucket sized on the wire and an
+// unshaped reader still recovers the data.
+func TestQuantizeRoundTrip(t *testing.T) {
+	x, y := net.Pipe()
+	cap := &capture{Conn: x}
+	var k Keys
+	r := Keys{SendKey: k.RecvKey, RecvKey: k.SendKey}
+	a, b := New(cap, k, Opts{Pad: Quantize}), New(y, r, Opts{})
+	msg := bytes.Repeat([]byte("x"), 700)
+	go func() { _, _ = a.Write(msg) }()
+	got := make([]byte, len(msg))
+	if _, err := io.ReadFull(b, got); err != nil || !bytes.Equal(got, msg) {
+		t.Fatalf("round trip: %v", err)
+	}
+	if n := cap.buf.Len(); n != 1400 {
+		t.Fatalf("wire bytes = %d, want 1400", n)
+	}
+}
+
+func FuzzQuantize(f *testing.F) {
+	f.Add(0)
+	f.Add(107)
+	f.Add(MaxData)
+	f.Fuzz(func(t *testing.T, n int) {
+		n = min(max(n, 0), MaxData)
+		if size := overhead + n + Quantize(n); size < overhead+n || size > buckets[len(buckets)-1] {
+			t.Fatalf("n=%d size=%d", n, size)
+		}
+	})
+}
+
+// Measured wire cost of shaping against the default padding. Bulk writes fill
+// records and cost almost nothing; interactive traffic pays for the buckets.
+func TestShapingOverhead(t *testing.T) {
+	wire := func(o Opts, sizes []int) (data, sent int) {
+		x, y := net.Pipe()
+		cap := &capture{Conn: x}
+		var k Keys
+		a := New(cap, k, o)
+		go func() { _, _ = io.Copy(io.Discard, y) }()
+		for _, n := range sizes {
+			if _, err := a.Write(make([]byte, n)); err != nil {
+				t.Fatal(err)
+			}
+			data += n
+		}
+		_ = a.Close()
+		return data, cap.buf.Len()
+	}
+	bulk := make([]int, 200)
+	for i := range bulk {
+		bulk[i] = 64 << 10 // fills MaxData records, with a short tail each
+	}
+	var interactive []int
+	for i := range 400 {
+		interactive = append(interactive, []int{40, 90, 160, 300, 620, 1200}[i%6])
+	}
+	for _, c := range []struct {
+		name  string
+		sizes []int
+		max   float64 // shaped wire bytes / default wire bytes
+	}{{"bulk", bulk, 1.30}, {"interactive", interactive, 3.0}} {
+		d, base := wire(Opts{}, c.sizes)
+		_, shaped := wire(Opts{Pad: Quantize}, c.sizes)
+		r := float64(shaped) / float64(base)
+		t.Logf("%s: data %d, default wire %d (%.2fx data), shaped wire %d (%.2fx data), shaped/default %.2fx",
+			c.name, d, base, float64(base)/float64(d), shaped, float64(shaped)/float64(d), r)
+		if r > c.max {
+			t.Errorf("%s: shaping costs %.2fx the default wire size, budget %.2fx", c.name, r, c.max)
+		}
+	}
+}
