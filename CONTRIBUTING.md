@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping. dotvpn is source-available under the PolyForm Noncommercial License 1.0.0 (see `LICENSE`).
+Thanks for helping. dotvpn-wire is dual-licensed: GNU Affero General Public License v3.0 only (`LICENSE-AGPL-3.0`) or PolyForm Noncommercial License 1.0.0 (`LICENSE`), at your option.
 
 ## Ground rules
 

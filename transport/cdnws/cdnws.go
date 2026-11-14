@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package cdnws is the CDN-friendly carrier: WebSocket over TLS to a path on
 // the node or CDN hostname, with smux multiplexing streams over a small pool
 // of sockets. CDNs forward WebSocket upgrades where they refuse CONNECT.

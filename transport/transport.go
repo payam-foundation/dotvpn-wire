@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package transport defines the seam between tunnel users and the ways a
 // tunnel can be carried (HTTP/2 CONNECT, HTTP/3 CONNECT, WebSocket over a CDN,
 // WebTunnel, Snowflake).

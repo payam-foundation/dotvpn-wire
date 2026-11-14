@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package mimic is the carrier whose first bytes are a real Chrome ClientHello
 // (uTLS) with the authentication "knock" hidden in the two fields that are
 // random on the wire anyway: the 32 byte client random and the 32 byte legacy

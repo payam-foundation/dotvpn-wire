@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package discovery gets a client from "I have an account key" to "I have a
 // token and a verified list of endpoints", even when the control plane is
 // blocked. The signed server list is the trust anchor: it can travel through

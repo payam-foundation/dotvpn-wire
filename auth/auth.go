@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package auth issues and verifies short-lived Ed25519 JWTs.
 //
 // Interface: Signer.Mint, Verifier.Verify, plus detached blob signatures used

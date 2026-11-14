@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package atomicfile writes secret-bearing files (configs, keys) so a crash
 // never leaves a half-written or world-readable file.
 package atomicfile

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package h3connect is the HTTP/3 CONNECT carrier: the same data plane as
 // h2connect over QUIC. It falls behind h2 in the client ladder because QUIC is
 // often throttled; when it works it avoids TCP head-of-line blocking.

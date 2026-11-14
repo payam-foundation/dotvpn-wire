@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package udpframe carries UDP datagrams over a byte stream: each datagram is
 // "u16 length | payload". The stream is an ordinary authenticated tunnel
 // stream, so UDP rides every carrier that can carry TCP.

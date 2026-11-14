@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package webtunnel is the carrier that looks like an ordinary HTTPS
 // WebSocket upgrade on a secret path of the decoy domain. The upgrade handshake
 // is Tor's WebTunnel httpupgrade transport; once switched, smux carries

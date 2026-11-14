@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0
+
 // Package h2connect is the HTTP/2 CONNECT carrier (the Firefox VPN data plane).
 package h2connect
 

@@ -24,6 +24,10 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      - name: SPDX header on every Go file
+        run: |
+          missing=$(git ls-files '*.go' | xargs grep -L 'SPDX-License-Identifier: AGPL-3.0-only OR PolyForm-Noncommercial-1.0.0' || true)
+          test -z "$missing" || { echo "missing SPDX header:"; echo "$missing"; exit 1; }
       - run: go vet ./...
       # The golden vectors (TestGoldenRecord, TestGoldenKeys) are the wire
       # contract: a change to one is a wire break and needs a major version.
