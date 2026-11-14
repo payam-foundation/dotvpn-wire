@@ -160,7 +160,7 @@ func TestQuantizeRoundTrip(t *testing.T) {
 	r := Keys{SendKey: k.RecvKey, RecvKey: k.SendKey}
 	a, b := New(cap, k, Opts{Pad: Quantize}), New(y, r, Opts{})
 	msg := bytes.Repeat([]byte("x"), 700)
-	go a.Write(msg)
+	go func() { _, _ = a.Write(msg) }()
 	got := make([]byte, len(msg))
 	if _, err := io.ReadFull(b, got); err != nil || !bytes.Equal(got, msg) {
 		t.Fatalf("round trip: %v", err)
@@ -190,7 +190,7 @@ func TestShapingOverhead(t *testing.T) {
 		cap := &capture{Conn: x}
 		var k Keys
 		a := New(cap, k, o)
-		go io.Copy(io.Discard, y)
+		go func() { _, _ = io.Copy(io.Discard, y) }()
 		for _, n := range sizes {
 			if _, err := a.Write(make([]byte, n)); err != nil {
 				t.Fatal(err)
