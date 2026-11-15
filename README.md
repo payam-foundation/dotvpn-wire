@@ -52,6 +52,55 @@ flowchart TB
     class users ext
 ```
 
+### Tokens and invites
+
+JWTs are Ed25519-signed. Audience isolates roles so a stolen token cannot be reused on the wrong plane:
+
+| Audience | Constant | Who presents it |
+|---|---|---|
+| `""` (empty) | data plane | Client session / account traffic to a node |
+| `control` | `AudControl` | Reach the control API (including through a relay) |
+| `enroll` | `AudEnroll` | One-time curated relay enrollment |
+| `pool` | `AudPool` | Node proving itself to a relay when parking a tunnel |
+
+Invites are only `dv://` (account + endpoints/control bootstrap) and signed `dvr://` (relay id + expanded endpoints for a cold start when the direct path is blocked). Verify `dvr://` before dialing.
+
+### Carriers
+
+`transport.Kind` names the carriers a node can offer in a signed server list:
+
+| Kind | Path | Notes |
+|---|---|---|
+| `h2` / `h3` | Direct to node | HTTP/2 or HTTP/3 `CONNECT` |
+| `cdnws` | Via CDN | WebSocket + smux; CDNs do not forward `CONNECT` reliably |
+| `webtunnel` / `snowflake` | Operator infra | Not Tor's public Snowflake pool for Dot VPN bridges |
+
+Two more paths are separate packages, not `Kind` values:
+
+| Package | Path | Notes |
+|---|---|---|
+| `transport/reverse` | In-country relay (TCP) | Mimic knock; node dials out and parks |
+| `dnscarrier` | In-country relay (UDP) | DNS-shaped carrier with KCP on top |
+
+### Reverse path (node ↔ relay ↔ client)
+
+The relay only listens. Two public knock keys keep scanners out; real auth is the handshake and the pool JWT behind them. `PoolKnockKey(relay)` is for node→relay park; `ClientKnockKey(relay, nodeID)` is for client→relay splice. Fleet wiring lives in [dotvpn-core](https://github.com/payam-foundation/dotvpn-core) and [dotvpn-relay](https://github.com/payam-foundation/dotvpn-relay).
+
+```mermaid
+sequenceDiagram
+    participant Node as dotvpn-core node
+    participant Relay as dotvpn-relay
+    participant Client as client
+
+    Node->>Relay: mimic knock (pool key)
+    Node->>Relay: handshake (relay pin) + AudPool token
+    Note over Relay: park tunnel by node id
+    Client->>Relay: mimic knock (per-node key)
+    Relay-->>Client: splice onto parked conn
+    Client->>Node: handshake (node pin) + muxstream
+    Note over Client,Node: relay forwards ciphertext only
+```
+
 ## Use it
 
 ```sh
@@ -109,9 +158,11 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Report vulnerabilities as describ
 
 | Repository | Role |
 |---|---|
+| [dotvpn-core](https://github.com/payam-foundation/dotvpn-core) | Node, control plane, egress |
 | [dotvpn-relay](https://github.com/payam-foundation/dotvpn-relay) | In-country stealth hop |
 | [dotvpn-client](https://github.com/payam-foundation/dotvpn-client) | Client library and `dotvpn` CLI |
 | [dotvpn-android](https://github.com/payam-foundation/dotvpn-android) | Android app |
+| [dotvpn-lab](https://github.com/payam-foundation/dotvpn-lab) | Integration and censorship lab |
 
 ## License
 
