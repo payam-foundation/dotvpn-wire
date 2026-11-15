@@ -67,15 +67,20 @@ Invites are only `dv://` (account + endpoints/control bootstrap) and signed `dvr
 
 ### Carriers
 
-Shared `transport.Kind` vocabulary used by every binary:
+`transport.Kind` names the carriers a node can offer in a signed server list:
 
 | Kind | Path | Notes |
 |---|---|---|
 | `h2` / `h3` | Direct to node | HTTP/2 or HTTP/3 `CONNECT` |
 | `cdnws` | Via CDN | WebSocket + smux; CDNs do not forward `CONNECT` reliably |
 | `webtunnel` / `snowflake` | Operator infra | Not Tor's public Snowflake pool for Dot VPN bridges |
-| `reverse` | In-country relay (TCP) | Mimic knock; node dials out and parks |
-| `dns` | In-country relay (UDP) | DNS-shaped carrier; node id prefixes the stream |
+
+Two more paths are separate packages, not `Kind` values:
+
+| Package | Path | Notes |
+|---|---|---|
+| `transport/reverse` | In-country relay (TCP) | Mimic knock; node dials out and parks |
+| `dnscarrier` | In-country relay (UDP) | DNS-shaped carrier with KCP on top |
 
 ### Reverse path (node ↔ relay ↔ client)
 
