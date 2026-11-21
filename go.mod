@@ -7,11 +7,11 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/quic-go/quic-go v0.65.0
 	github.com/refraction-networking/utls v1.8.2
-	github.com/xtaci/kcp-go/v5 v5.7.5
-	github.com/xtaci/smux v1.5.59
+	github.com/xtaci/kcp-go/v5 v5.7.6
+	github.com/xtaci/smux v1.5.60
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.15.3
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/webtunnel v0.0.7
-	golang.org/x/net v0.62.0
+	golang.org/x/net v0.63.0
 )
 
 require (
@@ -66,8 +66,8 @@ require (
 	github.com/wlynxg/anet v0.0.5 // indirect
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.6.0 // indirect
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/ptutil v0.0.0-20250815012447-418f76dcf315 // indirect
-	golang.org/x/crypto v0.58.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/crypto v0.59.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 )
